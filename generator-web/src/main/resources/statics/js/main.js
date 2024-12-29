@@ -17,6 +17,7 @@ $(function(){
 
 	// init output code area
 	$.outputArea = CodeMirror.fromTextArea(document.getElementById("outputArea"), {
+		mode: "text/x-java", // JAV
 		theme: "idea",   // IDEA主题
 		lineNumbers: true,   //显示行号
 		smartIndent: true, // 自动缩进
@@ -121,14 +122,20 @@ const vm = new Vue({
 		generate : function(){
 			//get value from codemirror
 			vm.formData.tableSql=$.inputArea.getValue();
-			axios.post("code/generate",vm.formData).then(function(res){
+			axios.post(basePath+"/code/generate",vm.formData).then(function(res){
 				if(res.code===500){
-					error("生成失败");
+					error("生成失败，请检查SQL语句!!!");
 					return;
 				}
 				setAllCookie();
 				//console.log(res.outputJson);
-				vm.outputJson=res.outputJson;
+				//兼容后端返回数据格式
+				if(res.data){
+					vm.outputJson = res.data.outputJson;
+				}else {
+					vm.outputJson = res.outputJson;
+				}
+
 				// console.log(vm.outputJson["bootstrap-ui"]);
 				vm.outputStr=vm.outputJson[vm.currentSelect].trim();
 				//console.log(vm.outputJson["bootstrap-ui"]);
@@ -136,7 +143,7 @@ const vm = new Vue({
 				$.outputArea.setValue(vm.outputStr);
 				$.outputArea.setSize('auto', 'auto');
 				//add to historicalData
-				vm.setHistoricalData(res.outputJson.tableName);
+				vm.setHistoricalData(vm.outputJson.tableName);
 				alert("生成成功");
 			});
 		},
@@ -146,12 +153,18 @@ const vm = new Vue({
 	},
 	created: function () {
 		//load all templates for selections 加载所有模板供选择
-		axios.post("template/all",{
+		axios.post(basePath+"/template/all",{
 			id:1234
 		}).then(function(res){
 			//console.log(res.templates);
-			vm.templates = JSON.parse(res.templates);
-			// console.log(vm.templates);
+			// vm.templates = JSON.parse(res.templates);
+			// console.log(res);
+			//兼容后端返回数据格式
+			if(res.data){
+				vm.templates = res.data.templates;
+			}else {
+				vm.templates = res.templates;
+			}
 		});
 	},
 	updated: function () {
